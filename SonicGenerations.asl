@@ -36,6 +36,8 @@ startup
 
   settings.Add("catagory", true, "Run Catagory");
   settings.CurrentDefaultParent = "catagory";
+  
+  //TODO Do some work to be able to track for 100% catagory  
   settings.Add("any_percent", true);
   settings.Add("act1_only", false);
   settings.Add("act2_only", false);
@@ -45,36 +47,42 @@ startup
  
 init
 {
-  // We are connected to the process now  
   if (modules.First().ModuleMemorySize == 0x1CAB000)
     version = "latest";
 
   // stage_id
   vars.stage_table = new Dictionary<string, byte>();
   vars.stage_table.Add("pam", 01); // pam = Overworld
+  
   vars.stage_table.Add("ghz", 02); // ghz = Green Hill
   vars.stage_table.Add("cpz", 03); // cpz = Chemical Plant
   vars.stage_table.Add("ssz", 04); // ssz = Sky Sanctuary
-  vars.stage_table.Add("sph", 05); // sph = Speed Highway
-  vars.stage_table.Add("cte", 06); // cte = City Escape
-  vars.stage_table.Add("ssh", 07); // ssh = Seaside Hill
-  vars.stage_table.Add("csc", 08); // csc = Crisis City
-  vars.stage_table.Add("euc", 09); // euc = Rooftop Run
-  vars.stage_table.Add("pla", 10); // pla = Planet Wisp
   
-  vars.stage_table.Add("cnz", 11); // cnz = Casino Night Zone
-  vars.stage_table.Add("fig", 12); // fig = Figurine Room
-
   // Bosses
-  vars.stage_table.Add("bde", 21); // bde = Death Egg Robo Boss Fight 
-  vars.stage_table.Add("bms", 22); // bms = Metal Sonic Rival Fight
+  vars.stage_table.Add("bde", 05); // bde = Death Egg Robo Boss Fight 
+  vars.stage_table.Add("bms", 06); // bms = Metal Sonic Rival Fight
   
-  vars.stage_table.Add("bpc", 23); // bpc = Perfect Chaos Boss Fight
-  vars.stage_table.Add("bsd", 24); // bsd = Shadow Rival Fight
-  vars.stage_table.Add("bsl", 25); // bsl = Silver Rival Fight
+  vars.stage_table.Add("sph", 07); // sph = Speed Highway
+  vars.stage_table.Add("cte", 08); // cte = City Escape
+  vars.stage_table.Add("ssh", 09); // ssh = Seaside Hill
   
-  vars.stage_table.Add("bne", 26); // bne = Egg Dragoon Boss Fight
-  vars.stage_table.Add("blb", 27); // blb = Time Eater Boss Fight
+  // Bosses
+  vars.stage_table.Add("bsd", 10); // bsd = Shadow Rival Fight
+  vars.stage_table.Add("bpc", 11); // bpc = Perfect Chaos Boss Fight
+  
+  vars.stage_table.Add("csc", 12); // csc = Crisis City
+  vars.stage_table.Add("euc", 13); // euc = Rooftop Run
+  vars.stage_table.Add("pla", 14); // pla = Planet Wisp
+  
+  // Bosses
+  vars.stage_table.Add("bsl", 15); // bsl = Silver Rival Fight
+  vars.stage_table.Add("bne", 16); // bne = Egg Dragoon Boss Fight
+  
+  vars.stage_table.Add("blb", 17); // blb = Time Eater Boss Fight
+  
+  // Extra stages
+  vars.stage_table.Add("cnz", 18); // cnz = Casino Night Zone
+  vars.stage_table.Add("fig", 19); // fig = Figurine Room
 
   vars.act = 0;
   vars.stage_id = 0;
@@ -177,6 +185,7 @@ update
 
 split
 {
+  //TODO Make sure these conditions work correctly with when doing challange stages.
   //TODO See if I can update different splits here?
 //  if(vars.stage_id > 1 && vars.current_stage_state != vars.prev_stage_state)
   if( (vars.stage_id > 1) && 
