@@ -61,12 +61,20 @@ init
   vars.stage_table.Add("csc", 08); // csc = Crisis City
   vars.stage_table.Add("euc", 09); // euc = Rooftop Run
   vars.stage_table.Add("pla", 10); // pla = Planet Wisp
+  
+  vars.stage_table.Add("cnz", 11); // cnz = Casino Night Zone
+  vars.stage_table.Add("fig", 12); // fig = Figurine Room
 
   // Bosses
-  vars.stage_table.Add("bde", 11); // bde = DeathEgg Robot
-  vars.stage_table.Add("bpc", 12); // bpc = Perfect Chaos
-  vars.stage_table.Add("bne", 13); // bne = Egg Dragoon
-  vars.stage_table.Add("blb", 14); // blb = Time Eater
+  vars.stage_table.Add("bde", 21); // bde = Death Egg Robo Boss Fight 
+  vars.stage_table.Add("bms", 22); // bms = Metal Sonic Rival Fight
+  
+  vars.stage_table.Add("bpc", 23); // bpc = Perfect Chaos Boss Fight
+  vars.stage_table.Add("bsd", 24); // bsd = Shadow Rival Fight
+  vars.stage_table.Add("bsl", 25); // bsl = Silver Rival Fight
+  
+  vars.stage_table.Add("bne", 26); // bne = Egg Dragoon Boss Fight
+  vars.stage_table.Add("blb", 27); // blb = Time Eater Boss Fight
 
   vars.act = 0;
   vars.stage_id = 0;
@@ -180,6 +188,7 @@ split
     vars.prev_stage_state = vars.current_stage_state;
     if(settings["any_percent"] == true)
     {
+      //TODO Maybe I should add an option to only split if both acts were completed for any%
       return true;
     }
     else if(settings["act1_only"] == true && vars.act == 1)
