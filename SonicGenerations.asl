@@ -12,7 +12,10 @@ state("SonicGenerations", "latest")
   // When you touch the goal, this section of 8 bytes are modified. 
   // We however can not use this reliabily as it is changed when you die, or talk to some NPCs.
   // I believe this has to do with either GUIs appering on the screen or your animation state.
-  ulong goal_hit : 0x01A0BE5C, 0x08, 0xa0;
+  //ulong goal_hit : 0x01A0BE5C, 0x08, 0xa0, 0x00;
+  
+  // Gui active gives a much better result as it only ever is set to 1 when you have a gui like the goal screen is active
+  short gui_active : 0x00D724CC, 0x668, 0x1c, 0xb5;
 
   // If the game is paused, this is true
   byte is_paused : 0x01A0BE5C, 0x08,0xD0;
@@ -25,13 +28,18 @@ state("SonicGenerations", "latest")
 
   // When you hit a combo bumper or ring, this becomes true. (Just here because it may be useful later)
   bool in_combo_seq : 0x01A0BE5C, 0x08, 0x19c;
+  
+  // Current game frame counter (only ticks if the game is rendering aka has focus)
+  int frame_counter : 0x00D724CC, 0x668, 0x1c, 0x80, 0xcc;
+  
+  //int looks_like_a_manager_class_of_some_kind : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8;
+  //int selected_item_in_pause_menu : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8, 0x0c;
 }
 
 startup
 {
   // We are currently loading this script. Set up shit here
-  settings.Add("Real_time", true, "Track Real Time");
-  settings.Add("Game_time", false, "Use Game time");
+  settings.Add("pause_game_timer", false, "Pause game time when game is paused");
   settings.Add("loading_time", true, "Include loading time in runtime");
 
   settings.Add("catagory", true, "Run Catagory");
@@ -164,18 +172,16 @@ update
       if(current.stage_name == "blb")
       {
         vars.in_final_boss = true;
-        vars.DebugOutput("In final boss");
       }
-      
     }
   }
   else
   {
-    vars.DebugOutput("In cutscene");
+    //vars.DebugOutput("In cutscene");
   }
 
   // if the new if statement in the split function works, we won't need this here
-  if(current.goal_hit != old.goal_hit)
+  if(current.gui_active != old.gui_active)
   {
     vars.current_stage_state = true;
   }
@@ -186,15 +192,14 @@ update
 split
 {
   //TODO Make sure these conditions work correctly with when doing challange stages.
-  //TODO See if I can update different splits here?
-//  if(vars.stage_id > 1 && vars.current_stage_state != vars.prev_stage_state)
-  if( (vars.stage_id > 1) && 
-      (current.is_paused == false) &&
+  if( (current.stage_time != 0) &&
+      (current.is_paused == 0x00) &&
       (current.stage_time - old.stage_time < 0.5f) &&
       (current.total_stage_time != old.total_stage_time) &&
-      (current.stage_name == old.stage_name) )
+      (current.stage_name == old.stage_name || vars.in_final_boss) &&
+      (vars.current_stage_state != vars.prev_stage_state) )
   {
-    vars.prev_stage_state = vars.current_stage_state;
+    vars.prev_stage_state = vars.current_stage_state; 
     if(settings["any_percent"] == true)
     {
       //TODO Maybe I should add an option to only split if both acts were completed for any%
@@ -220,11 +225,16 @@ isLoading
     return true;
 
   // Only count loading if we set it up like that
-  return (!settings["loading_time"] && ((vars.stage_id == 1) || current.stage_loading));
+  return (!settings["loading_time"] && ((vars.stage_id == 1) || current.stage_loading)) || 
+         (settings["pause_game_timer"] && (current.is_paused == 0x01));
 }
 
 gameTime
 {
+  if(vars.stage_id == 1)
+    return TimeSpan.FromSeconds( 0 );
+  
+  //TODO Find out if you died that way we keep ticking the counter
   //TODO create a buffer for the time here as the total_stage_time resets when changing stages
-  return TimeSpan.FromSeconds( Convert.ToDouble(current.total_stage_time) );
+  return TimeSpan.FromSeconds( Convert.ToDouble(current.stage_time) );
 }
