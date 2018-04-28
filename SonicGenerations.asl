@@ -15,7 +15,8 @@ state("SonicGenerations", "latest")
   //ulong goal_hit : 0x01A0BE5C, 0x08, 0xa0, 0x00;
   
   // Gui active gives a much better result as it only ever is set to 1 when you have a gui like the goal screen is active
-  short gui_active : 0x00D724CC, 0x668, 0x1c, 0xb5;
+  short gui_active : 0x01A66B34, 0x04, 0x34, 0x58, 0x1c, 0xb5;
+  //SonicGenerations.exe+902AC1 = the address to the code that changes this
 
   // If the game is paused, this is true
   byte is_paused : 0x01A0BE5C, 0x08,0xD0;
@@ -29,8 +30,8 @@ state("SonicGenerations", "latest")
   // When you hit a combo bumper or ring, this becomes true. (Just here because it may be useful later)
   bool in_combo_seq : 0x01A0BE5C, 0x08, 0x19c;
   
-  // Current game frame counter (only ticks if the game is rendering aka has focus)
-  int frame_counter : 0x00D724CC, 0x668, 0x1c, 0x80, 0xcc;
+  // Current game frame counter (only ticks if the game is rendering, aka has focus, and a game has been started or continued)
+  int frame_counter : 0x01A66B34, 0x04, 0x34, 0x58, 0x1c, 0xd8;
   
   //int looks_like_a_manager_class_of_some_kind : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8;
   //int selected_item_in_pause_menu : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8, 0x0c;
