@@ -33,6 +33,9 @@ state("SonicGenerations", "latest")
   // Current game frame counter (only ticks if the game is rendering, aka has focus, and a game has been started or continued)
   int frame_counter : 0x01A66B34, 0x04, 0x34, 0x58, 0x1c, 0xd8;
   
+  byte num_of_lives : 0x01A66B34, 0x04, 0x1b4, 0x7c, 0x9fdc;
+  //SonicGenerations.exe+959A67 - 89 81 DC9F0000        - mov [ecx+00009FDC],eax
+  
   //int looks_like_a_manager_class_of_some_kind : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8;
   //int selected_item_in_pause_menu : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8, 0x0c;
 }
@@ -187,7 +190,7 @@ update
   // if the new if statement in the split function works, we won't need this here
   if(current.gui_active != old.gui_active)
   {
-    vars.current_stage_state = true;
+    vars.current_stage_state = (current.gui_active == 1);
   }
   
   //vars.DebugOutput("stage_id:"+vars.stage_table[vars.stage_code.ToString()].Item1+"\nact1:"+vars.stage_table[vars.stage_code.ToString()].Item2+"\nact2:"+vars.stage_table[vars.stage_code.ToString()].Item3);
@@ -207,7 +210,9 @@ split
   
   //TODO Make sure these conditions work correctly with when doing challange stages.
   if( (vars.stage_id > 1) &&
+      (current.num_of_lives >= old.num_of_lives) &&
       (current.stage_time > 0.5f) &&
+      (current.total_stage_time > 0.5f) &&
       (current.is_paused == 0x00) &&
       (current.total_stage_time != old.total_stage_time) &&
       (current.stage_name == old.stage_name) &&
@@ -222,7 +227,7 @@ split
 //                   "\nin_boss:"+vars.in_boss.ToString()+
 //                   "\nin_final_boss:"+vars.in_final_boss.ToString());
 
-    //vars.DebugOutput("Split condition triggered");
+    vars.DebugOutput("Split condition triggered"); 
     vars.prev_stage_state = vars.current_stage_state;
     rtnValue = true;
     
