@@ -19,7 +19,7 @@ state("SonicGenerations", "latest")
   //SonicGenerations.exe+902AC1 = the address to the code that changes this
 
   // If the game is paused, this is true
-  byte is_paused : 0x01A0BE5C, 0x08,0xD0;
+  bool is_paused : 0x01A0BE5C, 0x08,0xD0;
 
   // Name of the stage we are currently on
   string6 stage_name : 0x01A0BE5C, 0x08, 0x88, 0x00;
@@ -47,8 +47,8 @@ startup
   settings.Add("pause_game_timer", false, "Pause gametime when game is paused");
   settings.Add("stage_split", false, "Split only when both acts of a stage is completed");
 
-  settings.Add("catagory", true, "Run Catagory");
-  settings.CurrentDefaultParent = "catagory";
+  //settings.Add("catagory", false, "Run Catagory");
+  //settings.CurrentDefaultParent = "catagory";
   
   //TODO Do some work to be able to track for 100% catagory
   //settings.Add("100%", false);
@@ -125,12 +125,17 @@ exit
 
 start
 {
-  if(current.stage_name != null && current.stage_name.Length > 3)
+  if(current.stage_name != "" && current.stage_name.Length > 3)
   {
+    vars.stage_code = "" + current.stage_name[0] + current.stage_name[1] + current.stage_name[2];
     vars.act = Convert.ToByte(current.stage_name[3].ToString());
   }
+  else
+  {
+    vars.stage_code = "";
+    vars.act = 0;
+  }
 
-  
   if (settings["act1_only"] == true && vars.act == 1 && current.stage_loading == true) {
     vars.DebugOutput("Act1 Timer started");
     return true;
@@ -139,11 +144,11 @@ start
     vars.DebugOutput("Act2 Timer started");
     return true;
   }
-  else if (current.stage_loading == true && vars.stage_id == 1) {
+  else if (current.stage_loading == true && old.stage_state == 0xFF && vars.stage_code == "ghz") {
     vars.DebugOutput("Any percent timer started");
     return true;
   }
-  
+
   return false;
 }
 
@@ -213,7 +218,7 @@ split
       (current.num_of_lives >= old.num_of_lives) &&
       (current.stage_time > 0.5f) &&
       (current.total_stage_time > 0.5f) &&
-      (current.is_paused == 0x00) &&
+      (current.is_paused == false) &&
       (current.total_stage_time != old.total_stage_time) &&
       (current.stage_name == old.stage_name) &&
       (current.gui_active != old.gui_active) &&
@@ -274,7 +279,7 @@ isLoading
 
   // Only count loading if we set it up like that
   return (!settings["loading_time"] && ((vars.stage_id == 1) || current.stage_loading)) || 
-         (settings["pause_game_timer"] && (current.is_paused == 0x01));
+         (settings["pause_game_timer"] && (current.is_paused == true));
 }
 
 gameTime
