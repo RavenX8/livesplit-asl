@@ -215,7 +215,7 @@ split
   
   //TODO Make sure these conditions work correctly with when doing challange stages.
   if( (vars.stage_id > 1) &&
-      (current.num_of_lives >= old.num_of_lives) &&
+      (current.num_of_lives == old.num_of_lives) &&
       (current.stage_time > 0.5f) &&
       (current.total_stage_time > 0.5f) &&
       (current.is_paused == false) &&
