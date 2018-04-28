@@ -40,14 +40,15 @@ state("SonicGenerations", "latest")
 startup
 {
   // We are currently loading this script. Set up shit here
-  settings.Add("pause_game_timer", false, "Pause game time when game is paused");
-  settings.Add("loading_time", true, "Include loading time in runtime");
+  settings.Add("loading_time", true, "Include loading time in gametime");
+  settings.Add("pause_game_timer", false, "Pause gametime when game is paused");
+  settings.Add("stage_split", false, "Split only when both acts of a stage is completed");
 
   settings.Add("catagory", true, "Run Catagory");
   settings.CurrentDefaultParent = "catagory";
   
-  //TODO Do some work to be able to track for 100% catagory  
-  settings.Add("any_percent", true);
+  //TODO Do some work to be able to track for 100% catagory
+  //settings.Add("100%", false);
   settings.Add("act1_only", false);
   settings.Add("act2_only", false);
 
@@ -60,38 +61,38 @@ init
     version = "latest";
 
   // stage_id
-  vars.stage_table = new Dictionary<string, byte>();
-  vars.stage_table.Add("pam", 01); // pam = Overworld
+  vars.stage_table = new Dictionary<string, Tuple<int, bool, bool>>();
+  vars.stage_table.Add("pam", new Tuple<int,bool,bool>(01, false, false)); // pam = Overworld
   
-  vars.stage_table.Add("ghz", 02); // ghz = Green Hill
-  vars.stage_table.Add("cpz", 03); // cpz = Chemical Plant
-  vars.stage_table.Add("ssz", 04); // ssz = Sky Sanctuary
-  
+  vars.stage_table.Add("ghz", new Tuple<int,bool,bool>(02, false, false)); // ghz = Green Hill
+  vars.stage_table.Add("cpz", new Tuple<int,bool,bool>(03, false, false)); // cpz = Chemical Plant
+  vars.stage_table.Add("ssz", new Tuple<int,bool,bool>(04, false, false)); // ssz = Sky Sanctuary
+
   // Bosses
-  vars.stage_table.Add("bde", 05); // bde = Death Egg Robo Boss Fight 
-  vars.stage_table.Add("bms", 06); // bms = Metal Sonic Rival Fight
-  
-  vars.stage_table.Add("sph", 07); // sph = Speed Highway
-  vars.stage_table.Add("cte", 08); // cte = City Escape
-  vars.stage_table.Add("ssh", 09); // ssh = Seaside Hill
-  
+  vars.stage_table.Add("bde", new Tuple<int,bool,bool>(05, false, false)); // bde = Death Egg Robo Boss Fight 
+  vars.stage_table.Add("bms", new Tuple<int,bool,bool>(06, false, false)); // bms = Metal Sonic Rival Fight
+
+  vars.stage_table.Add("sph", new Tuple<int,bool,bool>(07, false, false)); // sph = Speed Highway
+  vars.stage_table.Add("cte", new Tuple<int,bool,bool>(08, false, false)); // cte = City Escape
+  vars.stage_table.Add("ssh", new Tuple<int,bool,bool>(09, false, false)); // ssh = Seaside Hill
+
   // Bosses
-  vars.stage_table.Add("bsd", 10); // bsd = Shadow Rival Fight
-  vars.stage_table.Add("bpc", 11); // bpc = Perfect Chaos Boss Fight
-  
-  vars.stage_table.Add("csc", 12); // csc = Crisis City
-  vars.stage_table.Add("euc", 13); // euc = Rooftop Run
-  vars.stage_table.Add("pla", 14); // pla = Planet Wisp
-  
+  vars.stage_table.Add("bsd", new Tuple<int,bool,bool>(10, false, false)); // bsd = Shadow Rival Fight
+  vars.stage_table.Add("bpc", new Tuple<int,bool,bool>(11, false, false)); // bpc = Perfect Chaos Boss Fight
+
+  vars.stage_table.Add("csc", new Tuple<int,bool,bool>(12, false, false)); // csc = Crisis City
+  vars.stage_table.Add("euc", new Tuple<int,bool,bool>(13, false, false)); // euc = Rooftop Run
+  vars.stage_table.Add("pla", new Tuple<int,bool,bool>(14, false, false)); // pla = Planet Wisp
+
   // Bosses
-  vars.stage_table.Add("bsl", 15); // bsl = Silver Rival Fight
-  vars.stage_table.Add("bne", 16); // bne = Egg Dragoon Boss Fight
+  vars.stage_table.Add("bsl", new Tuple<int,bool,bool>(15, false, false)); // bsl = Silver Rival Fight
+  vars.stage_table.Add("bne", new Tuple<int,bool,bool>(16, false, false)); // bne = Egg Dragoon Boss Fight
   
-  vars.stage_table.Add("blb", 17); // blb = Time Eater Boss Fight
-  
+  vars.stage_table.Add("blb", new Tuple<int,bool,bool>(17, false, false)); // blb = Time Eater Boss Fight
+
   // Extra stages
-  vars.stage_table.Add("cnz", 18); // cnz = Casino Night Zone
-  vars.stage_table.Add("fig", 19); // fig = Figurine Room
+  vars.stage_table.Add("cnz", new Tuple<int,bool,bool>(18, false, false)); // cnz = Casino Night Zone
+  vars.stage_table.Add("fig", new Tuple<int,bool,bool>(19, false, false)); // fig = Figurine Room
 
   vars.act = 0;
   vars.stage_id = 0;
@@ -105,7 +106,6 @@ init
     print("[SonicGenerations Autosplitter] "+text);
   };
   vars.DebugOutput = DebugOutput;
-  vars.DebugOutput("test");
 }
  
 exit
@@ -127,11 +127,8 @@ start
     vars.act = Convert.ToByte(current.stage_name[3].ToString());
   }
 
-  if (settings["any_percent"] == true && current.stage_loading == true && vars.stage_id == 1) {
-    vars.DebugOutput("Any percent timer started");
-    return true;
-  }
-  else if (settings["act1_only"] == true && vars.act == 1 && current.stage_loading == true) {
+  
+  if (settings["act1_only"] == true && vars.act == 1 && current.stage_loading == true) {
     vars.DebugOutput("Act1 Timer started");
     return true;
   }
@@ -139,6 +136,11 @@ start
     vars.DebugOutput("Act2 Timer started");
     return true;
   }
+  else if (current.stage_loading == true && vars.stage_id == 1) {
+    vars.DebugOutput("Any percent timer started");
+    return true;
+  }
+  
   return false;
 }
 
@@ -146,7 +148,6 @@ update
 {
   // Reset some of the varibles that we are about to set
   vars.in_boss = false;
-  vars.in_final_boss = false;
 
   // if the new if statement in the split function works, we won't need this here
   if(current.stage_name != old.stage_name)
@@ -161,19 +162,21 @@ update
     {
       vars.act = Convert.ToByte(current.stage_name[3].ToString());
       vars.stage_code = "" + current.stage_name[0] + current.stage_name[1] + current.stage_name[2];
-      byte tempId = 0;
-      if(vars.stage_table.TryGetValue(vars.stage_code.ToString(), out tempId))
-      {
-        vars.stage_id = tempId;
-      }
     }
     else if (current.stage_name.Length == 3)
     {
+      vars.stage_code = current.stage_name;
       vars.in_boss = true;
       if(current.stage_name == "blb")
       {
         vars.in_final_boss = true;
       }
+    }
+    
+    Tuple<int,bool,bool> stage_item;
+    if(vars.stage_table.TryGetValue(vars.stage_code.ToString(), out stage_item))
+    {
+      vars.stage_id = stage_item.Item1;
     }
   }
   else
@@ -186,27 +189,66 @@ update
   {
     vars.current_stage_state = true;
   }
+  
+  //vars.DebugOutput("stage_id:"+vars.stage_table[vars.stage_code.ToString()].Item1+"\nact1:"+vars.stage_table[vars.stage_code.ToString()].Item2+"\nact2:"+vars.stage_table[vars.stage_code.ToString()].Item3);
 
-  //vars.DebugOutput("name: "+current.stage_name.ToString()+" id:"+vars.stage_id.ToString()+" act:"+vars.act.ToString()+" isloading:"+current.stage_loading.ToString());
+  //vars.DebugOutput("name: "+current.stage_name.ToString()+
+  //                 "\nid:"+vars.stage_id.ToString()+
+  //                 "\nact:"+vars.act.ToString()+
+  //                 "\nisloading:"+current.stage_loading.ToString()+
+  //                 "\nin_cutscene:"+current.stage_state.ToString()+
+  //                 "\nin_boss:"+vars.in_boss.ToString()+
+  //                 "\nin_final_boss:"+vars.in_final_boss.ToString());
 }
 
 split
 {
+  bool rtnValue = false;
+  
   //TODO Make sure these conditions work correctly with when doing challange stages.
-  if( (current.stage_time != 0) &&
+  if( (vars.stage_id > 1) &&
+      (current.stage_time > 0.5f) &&
       (current.is_paused == 0x00) &&
-      (current.stage_time - old.stage_time < 0.5f) &&
       (current.total_stage_time != old.total_stage_time) &&
-      (current.stage_name == old.stage_name || vars.in_final_boss) &&
+      (current.stage_name == old.stage_name) &&
+      (current.gui_active != old.gui_active) &&
       (vars.current_stage_state != vars.prev_stage_state) )
   {
-    vars.prev_stage_state = vars.current_stage_state; 
-    if(settings["any_percent"] == true)
+//    vars.DebugOutput("name: "+current.stage_name.ToString()+
+//                   "\nid:"+current.is_paused.ToString()+
+//                   "\nact:"+vars.act.ToString()+
+//                   "\nisloading:"+current.stage_loading.ToString()+
+//                   "\nin_cutscene:"+current.stage_state.ToString()+
+//                   "\nin_boss:"+vars.in_boss.ToString()+
+//                   "\nin_final_boss:"+vars.in_final_boss.ToString());
+
+    //vars.DebugOutput("Split condition triggered");
+    vars.prev_stage_state = vars.current_stage_state;
+    rtnValue = true;
+    
+    Tuple<int,bool,bool> stage_item;
+    if(vars.stage_table.TryGetValue(vars.stage_code.ToString(), out stage_item))
     {
-      //TODO Maybe I should add an option to only split if both acts were completed for any%
-      return true;
+      if(vars.act == 1)
+        vars.stage_table[vars.stage_code.ToString()] = new Tuple<int,bool,bool>(stage_item.Item1, true, stage_item.Item3);
+      else if(vars.act == 2)
+        vars.stage_table[vars.stage_code.ToString()] = new Tuple<int,bool,bool>(stage_item.Item1, stage_item.Item2, true);
+      else if(vars.in_boss == true)
+        vars.stage_table[vars.stage_code.ToString()] = new Tuple<int,bool,bool>(stage_item.Item1, true, true);
+      
+      if(settings["stage_split"] == true)
+      {
+        if((vars.stage_table[vars.stage_code.ToString()].Item2 == false ||
+           vars.stage_table[vars.stage_code.ToString()].Item3 == false) )
+        {
+          rtnValue = false;
+        }
+        
+        // Maybe we want to do other things here?
+      }
     }
-    else if(settings["act1_only"] == true && vars.act == 1)
+    
+    if(settings["act1_only"] == true && vars.act == 1)
     {
       return true;
     }
@@ -215,7 +257,7 @@ split
       return true;
     }
   }
-  return false;
+  return rtnValue;
 }
  
 isLoading
