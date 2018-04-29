@@ -12,14 +12,24 @@ state("SonicGenerations", "latest")
   // When you touch the goal, this section of 8 bytes are modified. 
   // We however can not use this reliabily as it is changed when you die, or talk to some NPCs.
   // I believe this has to do with either GUIs appering on the screen or your animation state.
-  //ulong goal_hit : 0x01A0BE5C, 0x08, 0xa0, 0x00;
+  //ulong goal_hit : 0x01A0BE5C, 0x08, 0xa0, 0x00; // Depercated
   
   // Gui active gives a much better result as it only ever is set to 1 when you have a gui like the goal screen is active
-  short gui_active : 0x01A66B34, 0x04, 0x34, 0x58, 0x1c, 0xb5;
+  //short gui_active : 0x01A66B34, 0x04, 0x34, 0x58, 0x1c, 0xb5; // Depercated
   //SonicGenerations.exe+902AC1 = the address to the code that changes this
 
   // If the game is paused, this is true
   bool is_paused : 0x01A0BE5C, 0x08,0xD0;
+  
+  // 1 = sliding/crouched state
+  // 2 = boosting
+  // 7 = dead? (classic sonic seems to love setting this to 7 even though he isn't dead)
+  byte character_state : 0x01A5E2F0, 0x118c;
+  
+  // 0 = in control
+  // 1 = bumpers?
+  // 2 = not in control
+  //byte character_control_state : 0x01A5E2F0, 0x760; // Depercated
 
   // Name of the stage we are currently on
   string6 stage_name : 0x01A0BE5C, 0x08, 0x88, 0x00;
@@ -28,16 +38,29 @@ state("SonicGenerations", "latest")
   byte stage_state : 0x01A0BE5C, 0x08, 0x88, 0x07;
 
   // When you hit a combo bumper or ring, this becomes true. (Just here because it may be useful later)
-  bool in_combo_seq : 0x01A0BE5C, 0x08, 0x19c;
+  //bool in_combo_seq : 0x01A0BE5C, 0x08, 0x19c;
+  //byte num_of_combos : 0x01A5E2F0, 0x1210;
   
-  // Current game frame counter (only ticks if the game is rendering, aka has focus, and a game has been started or continued)
-  int frame_counter : 0x01A66B34, 0x04, 0x34, 0x58, 0x1c, 0xd8;
+  // Current game frame counter (only ticks if the game is rendering, aka has focus)
+  int frame_counter : 0x01A66B34, 0x04, 0xd4;
   
-  byte num_of_lives : 0x01A66B34, 0x04, 0x1b4, 0x7c, 0x9fdc;
+  // The number of lives you have
+  byte num_of_lives : 0x01A66B34, 0x04, 0x1b4, 0x7c, 0x9fdc;  
+  
+  // 0x01 = no goal hit
+  // 0x02 = goal hit
+  // After you hit the goal, this doesn't reset until you go back to the overworld.
+  // Meaning hitting "Play Again" will not allow you to split again
+  byte stage_progress : 0x01A66B34, 0x04, 0x168, 0x94, 0x88;
+  
+  // 0x17 == Death Egg
+  // 0x20 = Start screen
+  // even numbers is classic, odd is modern
+  byte map_id : 0x01A66B34, 0x04, 0x168, 0x94, 0x8C;
+  
+  // Will be 0 if not in a challenge, otherwise this will be the challenge id
+  byte challenge_id : 0x01A66B34, 0x04, 0x168, 0x94, 0x8D;
   //SonicGenerations.exe+959A67 - 89 81 DC9F0000        - mov [ecx+00009FDC],eax
-  
-  //int looks_like_a_manager_class_of_some_kind : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8;
-  //int selected_item_in_pause_menu : 0x00D724CC, 0x668, 0x1c, 0x80, 0xa8, 0x0c;
 }
 
 startup
@@ -98,6 +121,7 @@ init
   vars.stage_table.Add("fig", new Tuple<int,bool,bool>(19, false, false)); // fig = Figurine Room
 
   vars.act = 0;
+  vars.lives = 0;
   vars.stage_id = 0;
   vars.stage_code = "";
   vars.in_boss = false;
@@ -115,6 +139,7 @@ exit
 {
   // Connected game closed. Do stuff if needed here
   vars.act = 0;
+  vars.lives = 0;
   vars.stage_id = 0;
   vars.stage_code = "";
   vars.in_boss = false;
@@ -129,6 +154,7 @@ start
   {
     vars.stage_code = "" + current.stage_name[0] + current.stage_name[1] + current.stage_name[2];
     vars.act = Convert.ToByte(current.stage_name[3].ToString());
+    vars.lives = current.num_of_lives;
   }
   else
   {
@@ -191,11 +217,17 @@ update
   {
     //vars.DebugOutput("In cutscene");
   }
-
+  
   // if the new if statement in the split function works, we won't need this here
-  if(current.gui_active != old.gui_active)
+  if(current.stage_progress == 0x02)
+    //(current.character_state != 0x07 || vars.in_boss || current.challenge_id > 0x00) ) // Challenges require us to check for 1
   {
-    vars.current_stage_state = (current.gui_active == 1);
+    vars.current_stage_state = true;
+  }
+  
+  if(current.num_of_lives != old.num_of_lives)
+  {
+    vars.lives = current.num_of_lives;
   }
   
   //vars.DebugOutput("stage_id:"+vars.stage_table[vars.stage_code.ToString()].Item1+"\nact1:"+vars.stage_table[vars.stage_code.ToString()].Item2+"\nact2:"+vars.stage_table[vars.stage_code.ToString()].Item3);
@@ -214,23 +246,24 @@ split
   bool rtnValue = false;
   
   //TODO Make sure these conditions work correctly with when doing challange stages.
-  if( (vars.stage_id > 1) &&
-      (current.num_of_lives == old.num_of_lives) &&
+  if( //(vars.stage_id > 1) &&
+      (current.map_id != 0x1b) &&
       (current.stage_time > 0.5f) &&
       (current.total_stage_time > 0.5f) &&
       (current.is_paused == false) &&
       (current.total_stage_time != old.total_stage_time) &&
       (current.stage_name == old.stage_name) &&
-      (current.gui_active != old.gui_active) &&
       (vars.current_stage_state != vars.prev_stage_state) )
   {
 //    vars.DebugOutput("name: "+current.stage_name.ToString()+
-//                   "\nid:"+current.is_paused.ToString()+
 //                   "\nact:"+vars.act.ToString()+
+//                   "\nis_paused:"+current.is_paused.ToString()+
 //                   "\nisloading:"+current.stage_loading.ToString()+
 //                   "\nin_cutscene:"+current.stage_state.ToString()+
 //                   "\nin_boss:"+vars.in_boss.ToString()+
-//                   "\nin_final_boss:"+vars.in_final_boss.ToString());
+//                   "\nin_final_boss:"+vars.in_final_boss.ToString()+
+//                   "\nnum_of_lives:"+current.num_of_lives.ToString()+
+//                   "\ngui_active:"+current.gui_active.ToString());
 
     vars.DebugOutput("Split condition triggered"); 
     vars.prev_stage_state = vars.current_stage_state;
