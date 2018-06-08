@@ -68,7 +68,7 @@ startup
   // We are currently loading this script. Set up shit here
   settings.Add("loading_time", true, "Include loading time in gametime");
   settings.Add("pause_game_timer", false, "Pause gametime when game is paused");
-  settings.Add("stage_split", false, "Split only when both acts of a stage is completed");
+  settings.Add("stage_split", false, "Split only when both acts of a stage is completed (does not include challanges)");
 
   //settings.Add("catagory", false, "Run Catagory");
   //settings.CurrentDefaultParent = "catagory";
@@ -279,7 +279,7 @@ split
       else if(vars.in_boss == true)
         vars.stage_table[vars.stage_code.ToString()] = new Tuple<int,bool,bool>(stage_item.Item1, true, true);
       
-      if(settings["stage_split"] == true)
+      if(settings["stage_split"] == true && current.challenge_id == 0x00)
       {
         if((vars.stage_table[vars.stage_code.ToString()].Item2 == false ||
            vars.stage_table[vars.stage_code.ToString()].Item3 == false) )
