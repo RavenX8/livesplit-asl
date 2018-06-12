@@ -69,6 +69,7 @@ startup
   settings.Add("loading_time", true, "Include loading time in gametime");
   settings.Add("pause_game_timer", false, "Pause gametime when game is paused");
   settings.Add("stage_split", false, "Split only when both acts of a stage is completed (does not include challanges)");
+  settings.Add("always_total_gt", true, "Show total game time during stages instead of total time on current stage (overworld always shows total sum of stages)");
 
   //settings.Add("catagory", false, "Run Catagory");
   //settings.CurrentDefaultParent = "catagory";
@@ -128,6 +129,11 @@ init
   vars.in_final_boss = false;
   vars.prev_stage_state = false;
   vars.current_stage_state = false;
+  
+  
+  vars.gameTimeBuffer = 0;
+  vars.totalGameTime = 0;
+  vars.totalStageTime = 0;
 
   Action<string> DebugOutput = (text) => {
     print("[SonicGenerations Autosplitter] "+text);
@@ -146,6 +152,9 @@ exit
   vars.in_final_boss = false;
   vars.prev_stage_state = false;
   vars.current_stage_state = false;
+  vars.gameTimeBuffer = 0;
+  vars.totalGameTime = 0;
+  vars.totalStageTime = 0;
 }
 
 start
@@ -220,7 +229,6 @@ update
   
   // if the new if statement in the split function works, we won't need this here
   if(current.stage_progress == 0x02)
-    //(current.character_state != 0x07 || vars.in_boss || current.challenge_id > 0x00) ) // Challenges require us to check for 1
   {
     vars.current_stage_state = true;
   }
@@ -228,17 +236,12 @@ update
   if(current.num_of_lives != old.num_of_lives)
   {
     vars.lives = current.num_of_lives;
+    
+    if(current.num_of_lives < old.num_of_lives)
+    {
+      vars.gameTimeBuffer = current.stage_time;
+    }
   }
-  
-  //vars.DebugOutput("stage_id:"+vars.stage_table[vars.stage_code.ToString()].Item1+"\nact1:"+vars.stage_table[vars.stage_code.ToString()].Item2+"\nact2:"+vars.stage_table[vars.stage_code.ToString()].Item3);
-
-  //vars.DebugOutput("name: "+current.stage_name.ToString()+
-  //                 "\nid:"+vars.stage_id.ToString()+
-  //                 "\nact:"+vars.act.ToString()+
-  //                 "\nisloading:"+current.stage_loading.ToString()+
-  //                 "\nin_cutscene:"+current.stage_state.ToString()+
-  //                 "\nin_boss:"+vars.in_boss.ToString()+
-  //                 "\nin_final_boss:"+vars.in_final_boss.ToString());
 }
 
 split
@@ -255,19 +258,12 @@ split
       (current.stage_name == old.stage_name) &&
       (vars.current_stage_state != vars.prev_stage_state) )
   {
-//    vars.DebugOutput("name: "+current.stage_name.ToString()+
-//                   "\nact:"+vars.act.ToString()+
-//                   "\nis_paused:"+current.is_paused.ToString()+
-//                   "\nisloading:"+current.stage_loading.ToString()+
-//                   "\nin_cutscene:"+current.stage_state.ToString()+
-//                   "\nin_boss:"+vars.in_boss.ToString()+
-//                   "\nin_final_boss:"+vars.in_final_boss.ToString()+
-//                   "\nnum_of_lives:"+current.num_of_lives.ToString()+
-//                   "\ngui_active:"+current.gui_active.ToString());
-
     vars.DebugOutput("Split condition triggered"); 
     vars.prev_stage_state = vars.current_stage_state;
     rtnValue = true;
+    
+    vars.totalGameTime += vars.totalStageTime + current.stage_time;
+    vars.totalStageTime = vars.gameTimeBuffer = 0;
     
     Tuple<int,bool,bool> stage_item;
     if(vars.stage_table.TryGetValue(vars.stage_code.ToString(), out stage_item))
@@ -317,10 +313,21 @@ isLoading
 
 gameTime
 {
-  if(vars.stage_id == 1)
-    return TimeSpan.FromSeconds( 0 );
+  if(vars.stage_id == 1) {
+    vars.totalStageTime = vars.gameTimeBuffer = 0;
+    return TimeSpan.FromSeconds( vars.totalGameTime );
+  }
+  
+  if( vars.gameTimeBuffer > 0 && (current.stage_time < 1) && (current.stage_time < vars.gameTimeBuffer) )
+  {
+    vars.totalStageTime += vars.gameTimeBuffer;
+    vars.gameTimeBuffer = 0;
+  }
   
   //TODO Find out if you died that way we keep ticking the counter
   //TODO create a buffer for the time here as the total_stage_time resets when changing stages
-  return TimeSpan.FromSeconds( Convert.ToDouble(current.stage_time) );
+  if(settings["always_total_gt"])
+    return TimeSpan.FromSeconds( Convert.ToDouble(vars.totalGameTime + vars.totalStageTime + current.stage_time) );
+  else
+    return TimeSpan.FromSeconds( Convert.ToDouble(vars.totalStageTime + current.stage_time) );
 }
