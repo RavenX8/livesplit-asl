@@ -66,18 +66,10 @@ state("SonicGenerations", "latest")
 startup
 {
   // We are currently loading this script. Set up shit here
-  settings.Add("loading_time", true, "Include loading time in gametime");
+  settings.Add("loading_time", true, "Remove load times from gametime");
   settings.Add("pause_game_timer", false, "Pause gametime when game is paused");
   settings.Add("stage_split", false, "Split only when both acts of a stage is completed (does not include challanges)");
   settings.Add("always_total_gt", true, "Show total game time during stages instead of total time on current stage (overworld always shows total sum of stages)");
-
-  //settings.Add("catagory", false, "Run Catagory");
-  //settings.CurrentDefaultParent = "catagory";
-  
-  //TODO Do some work to be able to track for 100% catagory
-  //settings.Add("100%", false);
-  settings.Add("act1_only", false);
-  settings.Add("act2_only", false);
 
   settings.CurrentDefaultParent = null;
 }
@@ -131,7 +123,6 @@ init
   vars.current_stage_state = false;
   vars.final_stage_state = false;
   
-  
   vars.currentCalcGameTime = 0;
   vars.gameTimeBuffer = 0;
   vars.totalGameTime = 0;
@@ -178,17 +169,26 @@ start
     vars.stage_code = "";
     vars.act = 0;
   }
+  
+  if(timer.Run.CategoryName == "Any%")
+    print("[SonicGenerations Autosplitter] "+"Category is Any%");
+  else if(timer.Run.CategoryName == "100%")
+    print("[SonicGenerations Autosplitter] "+"Category is 100%");
+  else if(timer.Run.CategoryName == "All Classic Stages")
+    print("[SonicGenerations Autosplitter] "+"Category is All Classic Stages");
+  else if(timer.Run.CategoryName == "All Modern Stages")
+    print("[SonicGenerations Autosplitter] "+"Category is All Modern Stages");
 
-  if (settings["act1_only"] == true && vars.act == 1 && current.stage_loading == true) {
+  if (timer.Run.CategoryName == "All Classic Stages" && vars.act == 1 && current.stage_loading == true) {
     vars.DebugOutput("Act1 Timer started");
     return true;
   }
-  else if (settings["act2_only"] == true && vars.act == 2 && current.stage_loading == true) {
+  else if (timer.Run.CategoryName == "All Modern Stages" && vars.act == 2 && current.stage_loading == true) {
     vars.DebugOutput("Act2 Timer started");
     return true;
   }
-  else if (current.stage_loading == true && old.stage_state == 0xFF && vars.stage_code == "ghz") {
-    vars.DebugOutput("Any percent timer started");
+  else if (timer.Run.CategoryName == "Any%" && current.stage_loading == true && old.stage_state == 0xFF && vars.stage_code == "ghz") {
+    vars.DebugOutput("Any% timer started");
     return true;
   }
 
@@ -313,11 +313,11 @@ split
       }
     }
     
-    if(settings["act1_only"] == true && vars.act == 2)
+    if(timer.Run.CategoryName == "All Classic Stages" && vars.act == 2)
     {
       return false;
     }
-    else if(settings["act2_only"] == true && vars.act == 1)
+    else if(timer.Run.CategoryName == "All Modern Stages" && vars.act == 1)
     {
       return false;
     }
@@ -327,12 +327,13 @@ split
  
 isLoading
 {
-  if(settings["act1_only"] == true && vars.act == 2)
+  if(timer.Run.CategoryName == "All Classic Stages" && vars.act == 2)
     return true;
-  else if(settings["act2_only"] == true && vars.act == 1)
+  else if(timer.Run.CategoryName == "All Modern Stages" && vars.act == 1)
     return true;
 
-  if((settings["loading_time"] && ((vars.stage_id == 1) || current.stage_loading)) || 
+  // Not sure if we should count overworld as part of gametime or not
+  if((settings["loading_time"] && ((/*(timer.Run.CategoryName != "Any%") &&*/ vars.stage_id == 1) || current.stage_loading)) || 
      (settings["pause_game_timer"] && (current.is_paused == true)))
     return true;
   // We do not meet the conditions, not loading
