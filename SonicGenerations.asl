@@ -170,14 +170,14 @@ start
     vars.act = 0;
   }
   
-  if(timer.Run.CategoryName == "Any%")
-    print("[SonicGenerations Autosplitter] "+"Category is Any%");
-  else if(timer.Run.CategoryName == "100%")
-    print("[SonicGenerations Autosplitter] "+"Category is 100%");
-  else if(timer.Run.CategoryName == "All Classic Stages")
-    print("[SonicGenerations Autosplitter] "+"Category is All Classic Stages");
-  else if(timer.Run.CategoryName == "All Modern Stages")
-    print("[SonicGenerations Autosplitter] "+"Category is All Modern Stages");
+//  if(timer.Run.CategoryName == "Any%")
+//    print("[SonicGenerations Autosplitter] "+"Category is Any%");
+//  else if(timer.Run.CategoryName == "100%")
+//    print("[SonicGenerations Autosplitter] "+"Category is 100%");
+//  else if(timer.Run.CategoryName == "All Classic Stages")
+//    print("[SonicGenerations Autosplitter] "+"Category is All Classic Stages");
+//  else if(timer.Run.CategoryName == "All Modern Stages")
+//    print("[SonicGenerations Autosplitter] "+"Category is All Modern Stages");
 
   if (timer.Run.CategoryName == "All Classic Stages" && vars.act == 1 && current.stage_loading == true) {
     vars.DebugOutput("Act1 Timer started");
