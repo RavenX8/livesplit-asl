@@ -54,13 +54,18 @@ state("SonicGenerations", "latest")
   byte stage_progress : 0x01A66B34, 0x04, 0x168, 0x94, 0x88;
   
   // 0x17 == Death Egg
-  // 0x20 = Start screen
+  // 0x1B == Overworld
+  // 0x20 == Start screen
   // even numbers is classic, odd is modern
   byte map_id : 0x01A66B34, 0x04, 0x168, 0x94, 0x8C;
   
   // Will be 0 if not in a challenge, otherwise this will be the challenge id
   byte challenge_id : 0x01A66B34, 0x04, 0x168, 0x94, 0x8D;
   //SonicGenerations.exe+959A67 - 89 81 DC9F0000        - mov [ecx+00009FDC],eax
+  
+  // Speed Address
+  //SonicGenerations.exe+DA26D8 - F3 0F11 80 AC000000   - movss [eax+000000AC],xmm0
+  float move_speed : 0x01A66B34, 0x04, 0x210, 0x0C, 0xA4, 0x6C, 0x04, 0xAC, 0xAC;
 }
 
 startup
@@ -333,7 +338,7 @@ isLoading
     return true;
 
   // Not sure if we should count overworld as part of gametime or not
-  if((settings["loading_time"] && ((/*(timer.Run.CategoryName != "Any%") &&*/ vars.stage_id == 1) || current.stage_loading)) || 
+  if((settings["loading_time"] && (((timer.Run.CategoryName != "Any%") && current.map_id == 27) || current.stage_loading)) || 
      (settings["pause_game_timer"] && (current.is_paused == true)))
     return true;
   // We do not meet the conditions, not loading
@@ -342,7 +347,7 @@ isLoading
 
 gameTime
 {
-  if(vars.stage_id == 1 || current.stage_loading || current.map_id == 27) {
+  if(current.stage_loading || (((timer.Run.CategoryName != "Any%") && current.map_id == 27)) {
     vars.currentCalcGameTime = vars.totalStageTime = vars.gameTimeBuffer = 0;
     return TimeSpan.FromSeconds( vars.totalStageTime );
   }
