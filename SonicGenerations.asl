@@ -347,7 +347,7 @@ isLoading
 
 gameTime
 {
-  if(current.stage_loading || (((timer.Run.CategoryName != "Any%") && current.map_id == 27)) {
+  if(current.stage_loading || (((timer.Run.CategoryName != "Any%") && current.map_id == 27))) {
     vars.currentCalcGameTime = vars.totalStageTime = vars.gameTimeBuffer = 0;
     return TimeSpan.FromSeconds( vars.totalStageTime );
   }
