@@ -78,7 +78,7 @@ startup
 
   settings.CurrentDefaultParent = null;
 }
- 
+
 init
 {
   if (modules.First().ModuleMemorySize == 0x1CAB000)
@@ -122,6 +122,7 @@ init
   vars.lives = 0;
   vars.stage_id = 0;
   vars.stage_code = "";
+  vars.has_split = false;
   vars.in_boss = false;
   vars.in_final_boss = false;
   vars.prev_stage_state = false;
@@ -148,6 +149,7 @@ exit
   vars.lives = 0;
   vars.stage_id = 0;
   vars.stage_code = "";
+  vars.has_split = false;
   vars.in_boss = false;
   vars.in_final_boss = false;
   vars.prev_stage_state = false;
@@ -289,7 +291,7 @@ split
       (current.stage_name == old.stage_name) &&
       (vars.current_stage_state != vars.prev_stage_state) )
   {
-    vars.DebugOutput("Split condition triggered"); 
+    //vars.DebugOutput("Split condition triggered");
     vars.prev_stage_state = vars.current_stage_state;
     rtnValue = true;
     
@@ -326,6 +328,7 @@ split
     {
       return false;
     }
+    if(rtnValue == true) vars.has_split = true;
   }
   return rtnValue;
 }
@@ -347,7 +350,10 @@ isLoading
 
 gameTime
 {
-  if(current.stage_loading || (((timer.Run.CategoryName != "Any%") && current.map_id == 27))) {
+  if(current.stage_loading || 
+      ((timer.Run.CategoryName != "Any%") && 
+        (current.map_id == 27 || 
+        (vars.gameTimeBuffer > 0 && (current.stage_time < 1) && vars.has_split == false)))) {
     vars.currentCalcGameTime = vars.totalStageTime = vars.gameTimeBuffer = 0;
     return TimeSpan.FromSeconds( vars.totalStageTime );
   }
